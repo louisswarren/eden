@@ -85,7 +85,7 @@ def F(*b):
 
 class Tree:
     def implintr(self, prem_formula):
-        return ImplicationIntro(self, *assumise(*prem_formula))
+        return ImplicationIntro(self, prem_formula)
 
     def discharge(self, formula):
         self.open = self.open - {formula}
@@ -142,7 +142,7 @@ A, B, C = Atom('A'), Atom('B'), Atom('C')
 pf = Assumption(Implication(A, Implication(B, C)))
 pf = ImplicationElim(pf, Assumption(A))
 pf = ImplicationElim(pf, Assumption(B))
-pf = ImplicationIntro(pf, C)
+pf = ImplicationIntro(pf, A)
 pf = ImplicationIntro(pf, B)
 print(pf)
 print()
@@ -154,10 +154,37 @@ print()
 pf = (
 F(
 F(       A >> (B >> C),      A                                                 )
-                .implelim(),                      Assumption(B)                )
+                .implelim(),                      B                            )
                                 .implelim()
                                 .implintr(A)
                                 .implintr(B)
 )
 
 print(pf)
+
+
+
+"""
+A → (B → C)        [A]                 
+---------------------- →-              
+        B → C                    [B]   
+        ---------------------------- →-
+                 C                     
+                 ----- →+              
+                 A → C                 
+              ----------- →+
+              B → (A → C)
+
+
+
+
+A → (B → C)        [A]                 
+---------------------- →-              
+        B → C                    [B]   
+        ---------------------------- →-
+                 C                     
+                 ----- →+              
+                 A → C                 
+              ----------- →+
+              B → (A → C)
+              """
