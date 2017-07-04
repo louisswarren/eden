@@ -38,8 +38,8 @@ class Implication(Formula, namedtuple('Implication', 'prem conc')):
         return '{} → {}'.format(*map(paren, (self.prem, self.conc)))
 
 
-@compose('\n'.join)
 def make_str_tree(tree, name):
+    lines = []
     sep = ' ' * 8
     width = lambda s: max(len(line) for line in str(s).split('\n'))
     height = lambda s: len(str(s).split('\n'))
@@ -48,13 +48,20 @@ def make_str_tree(tree, name):
               for b in tree.branches]
     branch_widths = [width(b) for b in tree.branches]
     for elems in zip(*padded):
-        assert(len(elems) == len(tree.branches))
         padded_elems = [e + ' ' * (branch_widths[i] - len(e))
                         for i, e in enumerate(elems)]
-        yield sep.join(padded_elems)
-    hline = '-' * (sum(branch_widths) + len(sep) * (len(tree.branches) - 1))
-    yield hline + ' ' + name
-    yield ('{:^' + str(len(hline) + 1 + len(name)) + '}').format(str(tree.root))
+        lines.append(sep.join(padded_elems))
+    prev_width = (len(lines[-1].strip()) if lines else 0)
+    total_width = (sum(branch_widths) + len(sep) * (len(tree.branches) - 1))
+    curr_pad_len = (total_width - len(str(tree.root))) // 2
+    if prev_width < len(str(tree.root)):
+        hline = ' ' * curr_pad_len + '-' * len(str(tree.root))
+    else:
+        prev_pad = len(lines[-1]) - len(lines[-1].lstrip())
+        hline = ' ' * prev_pad + '-' * prev_width
+    lines.append(hline + ' ' + name)
+    lines.append(' ' * curr_pad_len + str(tree.root))
+    return '\n'.join(lines)
 
 
 class Eden:
@@ -111,3 +118,17 @@ pf = ImplicationElim(pf, Assumption(b))
 pf = ImplicationIntro(pf, a)
 pf = ImplicationIntro(pf, b)
 print(pf)
+
+
+
+"""
+A → (B → C)        [A]                 
+---------------------- →-              
+        B → C                    [B]   
+        ---------------------------- →-
+                 C                     
+                 ----- →+              
+                 A → C                 
+              ----------- →+
+              B → (A → C)
+              """
