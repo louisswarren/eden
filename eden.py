@@ -37,6 +37,14 @@ class Implication(Formula, namedtuple('Implication', 'prem conc')):
     def __str__(self):
         return '{} → {}'.format(*map(paren, (self.prem, self.conc)))
 
+class Conjunction(Formula, namedtuple('Conjunction', 'left right')):
+    def __str__(self):
+        return '{} ∧ {}'.format(*map(paren, (self.left, self.right)))
+
+class Disjunction(Formula, namedtuple('Disjunction', 'left right')):
+    def __str__(self):
+        return '{} ∧ {}'.format(*map(paren, (self.left, self.right)))
+
 
 def make_str_tree(tree, name):
     lines = []
@@ -64,13 +72,17 @@ def make_str_tree(tree, name):
     return '\n'.join(lines)
 
 
-class Eden:
-    pass
+class Forest(list):
+    def implelim(self):
+        return ImplicationElim(*self)
 
-class Forest(Eden, list):
-    pass
+def F(*b):
+    return Forest(b)
 
-class Tree(Eden):
+class Tree:
+    def implintr(self, prem_formula):
+        return ImplicationIntro(self, prem_formula)
+
     def discharge(self, formula):
         self.open = self.open - {formula}
         for b in self.branches:
@@ -99,7 +111,6 @@ class ImplicationElim(Tree):
     def __str__(self):
         return make_str_tree(self, '→-')
 
-
 class ImplicationIntro(Tree):
     @roots(Formula)
     def __init__(self, conc, prem_formula):
@@ -111,6 +122,18 @@ class ImplicationIntro(Tree):
     def __str__(self):
         return make_str_tree(self, '→+')
 
+class ConjunctionElim(Tree):
+    @roots(Conjunction, Formula)
+    def __init__(self, conj, result):
+        self.root = result.root
+        self.branches = (conj, result)
+        result.discharge(conj.root.left)
+        result.discharge(conj.root.right)
+        self.open = conj.open | result.open
+
+    def __str__(self):
+        return make_str_tree(self, '∧+')
+
 a, b, c = Atom('A'), Atom('B'), Atom('C')
 pf = Assumption(Implication(a, Implication(b, c)))
 pf = ImplicationElim(pf, Assumption(a))
@@ -118,17 +141,20 @@ pf = ImplicationElim(pf, Assumption(b))
 pf = ImplicationIntro(pf, a)
 pf = ImplicationIntro(pf, b)
 print(pf)
+print()
+print()
+print()
+print()
 
+# Alternate method
+hyp = Assumption(Implication(a, Implication(b, c)))
+pf = (
+F(
+F(       hyp,      Assumption(a))
+             .implelim(),                      Assumption(b)                   )
+                             .implelim()
+                             .implintr(a)
+                             .implintr(b)
+)
 
-
-"""
-A → (B → C)        [A]                 
----------------------- →-              
-        B → C                    [B]   
-        ---------------------------- →-
-                 C                     
-                 ----- →+              
-                 A → C                 
-              ----------- →+
-              B → (A → C)
-              """
+print(pf)
