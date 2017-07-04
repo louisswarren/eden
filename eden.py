@@ -154,10 +154,10 @@ print()
 pf = (
 F(
 F(       A >> (B >> C),      A                                                 )
-             .implelim(),                      Assumption(B)                   )
-                             .implelim()
-                             .implintr(A)
-                             .implintr(B)
+                .implelim(),                      Assumption(B)                )
+                                .implelim()
+                                .implintr(A)
+                                .implintr(B)
 )
 
 print(pf)
