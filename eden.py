@@ -4,15 +4,11 @@ from collections import namedtuple
 
 compose = lambda f: lambda g: lambda *a, **k: f(g(*a, **k))
 
-# Kind of useless, should check the type of the TREE ROOT INSTEAD
 def roots(*types):
     def dec(f):
         def g(*args):
             for arg, t in zip(args[1:], types):
-#                if isinstance(arg, Tree):
-                    assert(isinstance(arg.root, t))
-#                else:
-#                    assert(isinstance(arg, t))
+                assert(isinstance(arg.root, t))
             return f(*args)
         return g
     return dec
@@ -27,7 +23,8 @@ def paren(f):
 
 
 class Formula:
-    pass
+    def __rshift__(self, other):
+        return Implication(self, other)
 
 class Atom(Formula, namedtuple('Atom', 'formula')):
     def __str__(self):
@@ -72,16 +69,23 @@ def make_str_tree(tree, name):
     return '\n'.join(lines)
 
 
+def assumise(*args):
+    for arg in args:
+        if isinstance(arg, Formula):
+            yield Assumption(arg)
+        else:
+            yield arg
+
 class Forest(list):
     def implelim(self):
-        return ImplicationElim(*self)
+        return ImplicationElim(*assumise(*self))
 
 def F(*b):
     return Forest(b)
 
 class Tree:
     def implintr(self, prem_formula):
-        return ImplicationIntro(self, prem_formula)
+        return ImplicationIntro(self, *assumise(*prem_formula))
 
     def discharge(self, formula):
         self.open = self.open - {formula}
@@ -134,12 +138,12 @@ class ConjunctionElim(Tree):
     def __str__(self):
         return make_str_tree(self, '∧+')
 
-a, b, c = Atom('A'), Atom('B'), Atom('C')
-pf = Assumption(Implication(a, Implication(b, c)))
-pf = ImplicationElim(pf, Assumption(a))
-pf = ImplicationElim(pf, Assumption(b))
-pf = ImplicationIntro(pf, a)
-pf = ImplicationIntro(pf, b)
+A, B, C = Atom('A'), Atom('B'), Atom('C')
+pf = Assumption(Implication(A, Implication(B, C)))
+pf = ImplicationElim(pf, Assumption(A))
+pf = ImplicationElim(pf, Assumption(B))
+pf = ImplicationIntro(pf, C)
+pf = ImplicationIntro(pf, B)
 print(pf)
 print()
 print()
@@ -147,14 +151,13 @@ print()
 print()
 
 # Alternate method
-hyp = Assumption(Implication(a, Implication(b, c)))
 pf = (
 F(
-F(       hyp,      Assumption(a))
-             .implelim(),                      Assumption(b)                   )
+F(       A >> (B >> C),      A                                                 )
+             .implelim(),                      Assumption(B)                   )
                              .implelim()
-                             .implintr(a)
-                             .implintr(b)
+                             .implintr(A)
+                             .implintr(B)
 )
 
 print(pf)
