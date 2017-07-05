@@ -26,6 +26,18 @@ class Formula:
     def __rshift__(self, other):
         return Implication(self, other)
 
+    def __or__(self, other):
+        return Disjunction(self, other)
+
+    def __xor__(self, other):
+        return Conjunction(self, other)
+
+    def implintr(self, *args, **kwargs):
+        return Assumption(self).implintr(*args, **kwargs)
+
+    def disjintr(self, *args, **kwargs):
+        return Assumption(self).disjintr(*args, **kwargs)
+
 class Atom(Formula, namedtuple('Atom', 'formula')):
     def __str__(self):
         return str(self.formula)
@@ -40,7 +52,7 @@ class Conjunction(Formula, namedtuple('Conjunction', 'left right')):
 
 class Disjunction(Formula, namedtuple('Disjunction', 'left right')):
     def __str__(self):
-        return '{} ∧ {}'.format(*map(paren, (self.left, self.right)))
+        return '{} ∨ {}'.format(*map(paren, (self.left, self.right)))
 
 
 def make_str_tree(tree, name):
@@ -80,17 +92,34 @@ class Forest(list):
     def implelim(self):
         return ImplicationElim(*assumise(*self))
 
+    def conjelim(self):
+        return ConjunctionElim(*assumise(*self))
+
+    def conjintr(self):
+        return ConjunctionIntro(*assumise(*self))
+
+    def disjelim(self):
+        return DisjunctionElim(*assumise(*self))
+
 def F(*b):
     return Forest(b)
 
 class Tree:
-    def implintr(self, prem_formula):
+    def implintr(self, prem_formula=None):
+        if not prem_formula:
+            prem_formula = next(iter(self.open))
         return ImplicationIntro(self, prem_formula)
+
+    def disjintr(self, weak_formula):
+        return DisjunctionIntro(self, weak_formula)
 
     def discharge(self, formula):
         self.open = self.open - {formula}
         for b in self.branches:
             b.discharge(formula)
+
+    def is_closed(self):
+        return not self.open
 
 class Assumption(Tree):
     def __init__(self, formula):
@@ -136,21 +165,43 @@ class ConjunctionElim(Tree):
         self.open = conj.open | result.open
 
     def __str__(self):
+        return make_str_tree(self, '∧-')
+
+class ConjunctionIntro(Tree):
+    @roots(Formula, Formula)
+    def __init__(self, left, right):
+        self.root = Conjunction(left.root, right.root)
+        self.branches = (left, right)
+        self.open = left.open | right.open
+
+    def __str__(self):
         return make_str_tree(self, '∧+')
 
-A, B, C = Atom('A'), Atom('B'), Atom('C')
-pf = Assumption(Implication(A, Implication(B, C)))
-pf = ImplicationElim(pf, Assumption(A))
-pf = ImplicationElim(pf, Assumption(B))
-pf = ImplicationIntro(pf, A)
-pf = ImplicationIntro(pf, B)
-print(pf)
-print()
-print()
-print()
-print()
+class DisjunctionElim(Tree):
+    @roots(Disjunction, Formula, Formula)
+    def __init__(self, disj, left, right):
+        assert(left.root == right.root)
+        self.root = left.root
+        self.branches = (disj, left, right)
+        left.discharge(disj.root.left)
+        right.discharge(disj.root.right)
+        self.open = disj.open | left.open | right.open
 
-# Alternate method
+    def __str__(self):
+        return make_str_tree(self, '∨-')
+
+class DisjunctionIntro(Tree):
+    @roots(Formula)
+    def __init__(self, parent, weak_formula):
+        self.root = Disjunction(parent.root, weak_formula)
+        self.branches = (parent,)
+        self.open = parent.open
+
+    def __str__(self):
+        return make_str_tree(self, '∨+')
+
+A, B, C = Atom('A'), Atom('B'), Atom('C')
+
 pf = (
 F(
 F(       A >> (B >> C),      A                                                 )
@@ -158,33 +209,44 @@ F(       A >> (B >> C),      A                                                 )
                                 .implelim()
                                 .implintr(A)
                                 .implintr(B)
+                                .implintr()
 )
-
 print(pf)
-
-
-
-"""
-A → (B → C)        [A]                 
----------------------- →-              
-        B → C                    [B]   
-        ---------------------------- →-
-                 C                     
-                 ----- →+              
-                 A → C                 
-              ----------- →+
-              B → (A → C)
+assert(pf.is_closed())
 
 
 
 
-A → (B → C)        [A]                 
----------------------- →-              
-        B → C                    [B]   
-        ---------------------------- →-
-                 C                     
-                 ----- →+              
-                 A → C                 
-              ----------- →+
-              B → (A → C)
-              """
+print(
+        A
+    .disjintr(B)
+)
+print()
+
+print(
+F(    A | B,
+F(                 A >> C,      A                                              )
+                       .implelim(),
+F(                                        B >> C,     B                        )
+                                            .implelim()                        )
+                       .disjelim()
+)
+print()
+
+
+print(
+F(    A,       B                                                               )
+      .conjintr()
+)
+print()
+
+
+print(
+F(        A ^ B,
+F(F(                             A >> (B >> C),         A                      )
+                                           .implelim()                         ,
+                                                               B               )
+                                                  .implelim()                  )
+                   .conjelim()
+)
+print()
