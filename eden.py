@@ -1,6 +1,6 @@
 '''Humans can obtain Knowledge from trees in Eden, by way of Python.'''
 
-from collections import namedtuple
+from formula import *
 
 compose = lambda f: lambda g: lambda *a, **k: f(g(*a, **k))
 
@@ -12,48 +12,6 @@ def roots(*types):
             return f(*args)
         return g
     return dec
-
-def paren(f):
-    if not isinstance(f, Atom):
-        return '({})'.format(f)
-    else:
-        return str(f)
-
-
-
-
-class Formula:
-    def __rshift__(self, other):
-        return Implication(self, other)
-
-    def __or__(self, other):
-        return Disjunction(self, other)
-
-    def __xor__(self, other):
-        return Conjunction(self, other)
-
-    def implintr(self, *args, **kwargs):
-        return Assumption(self).implintr(*args, **kwargs)
-
-    def disjintr(self, *args, **kwargs):
-        return Assumption(self).disjintr(*args, **kwargs)
-
-class Atom(Formula, namedtuple('Atom', 'formula')):
-    def __str__(self):
-        return str(self.formula)
-
-class Implication(Formula, namedtuple('Implication', 'prem conc')):
-    def __str__(self):
-        return '{} → {}'.format(*map(paren, (self.prem, self.conc)))
-
-class Conjunction(Formula, namedtuple('Conjunction', 'left right')):
-    def __str__(self):
-        return '{} ∧ {}'.format(*map(paren, (self.left, self.right)))
-
-class Disjunction(Formula, namedtuple('Disjunction', 'left right')):
-    def __str__(self):
-        return '{} ∨ {}'.format(*map(paren, (self.left, self.right)))
-
 
 def make_str_tree(tree, name):
     lines = []
@@ -80,39 +38,7 @@ def make_str_tree(tree, name):
     lines.append(' ' * curr_pad_len + str(tree.root))
     return '\n'.join(lines)
 
-
-def assumise(*args):
-    for arg in args:
-        if isinstance(arg, Formula):
-            yield Assumption(arg)
-        else:
-            yield arg
-
-class Forest(list):
-    def implelim(self):
-        return ImplicationElim(*assumise(*self))
-
-    def conjelim(self):
-        return ConjunctionElim(*assumise(*self))
-
-    def conjintr(self):
-        return ConjunctionIntro(*assumise(*self))
-
-    def disjelim(self):
-        return DisjunctionElim(*assumise(*self))
-
-def F(*b):
-    return Forest(b)
-
 class Tree:
-    def implintr(self, prem_formula=None):
-        if not prem_formula:
-            prem_formula = next(iter(self.open))
-        return ImplicationIntro(self, prem_formula)
-
-    def disjintr(self, weak_formula):
-        return DisjunctionIntro(self, weak_formula)
-
     def discharge(self, formula):
         self.open = self.open - {formula}
         for b in self.branches:
@@ -199,54 +125,3 @@ class DisjunctionIntro(Tree):
 
     def __str__(self):
         return make_str_tree(self, '∨+')
-
-A, B, C = Atom('A'), Atom('B'), Atom('C')
-
-pf = (
-F(
-F(       A >> (B >> C),      A                                                 )
-                .implelim(),                      B                            )
-                                .implelim()
-                                .implintr(A)
-                                .implintr(B)
-                                .implintr()
-)
-print(pf)
-assert(pf.is_closed())
-
-
-
-
-print(
-        A
-    .disjintr(B)
-)
-print()
-
-print(
-F(    A | B,
-F(                 A >> C,      A                                              )
-                       .implelim(),
-F(                                        B >> C,     B                        )
-                                            .implelim()                        )
-                       .disjelim()
-)
-print()
-
-
-print(
-F(    A,       B                                                               )
-      .conjintr()
-)
-print()
-
-
-print(
-F(        A ^ B,
-F(F(                             A >> (B >> C),         A                      )
-                                           .implelim()                         ,
-                                                               B               )
-                                                  .implelim()                  )
-                   .conjelim()
-)
-print()
