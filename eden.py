@@ -4,11 +4,15 @@ from formula import *
 
 compose = lambda f: lambda g: lambda *a, **k: f(g(*a, **k))
 
+class DeductionError(Exception):
+    pass
+
 def roots(*types):
     def dec(f):
         def g(*args):
             for arg, t in zip(args[1:], types):
-                assert(isinstance(arg.root, t))
+                if not isinstance(arg.root, t):
+                    raise DeductionError("Expected {}, got {}".format(t, (arg.root)))
             return f(*args)
         return g
     return dec
