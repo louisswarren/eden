@@ -50,6 +50,16 @@ class univintr(Argstore):
     opts = 0 # Options are optional
     constructor = UniversalIntro
 
+class exiselim(Argstore):
+    order = 2
+    opts = 0 # Options are optional
+    constructor = ExistentialElim
+
+class exisintr(Argstore):
+    order = 1
+    opts = 0 # Options are optional
+    constructor = ExistentialIntro
+
 def parse(*seq):
     stack = []
     for val in seq:
@@ -77,11 +87,28 @@ print(parse(
                           implintr(B),
                           implintr(),
 ))
-
+print()
 
 Px = Predicate('P', 'x')
 print(parse(
     Universal('x', Px),
     univelim('y'),
-    univintr('y', 'z'),
+    univintr(),
+))
+print()
+
+Pt = Predicate('P', 't')
+print(parse(
+    Existential('x', Px),
+                Universal('x', Px >> A),
+                univelim('t'),
+                                Pt,
+                    implelim(),
+            exiselim('t'),
+))
+print()
+
+print(parse(
+    Pt,
+    exisintr('t', 'x'),
 ))

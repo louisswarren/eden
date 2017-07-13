@@ -158,3 +158,37 @@ class UniversalIntro(Tree):
 
     def __str__(self):
         return make_str_tree(self, '∀+')
+
+class ExistentialElim(Tree):
+    @roots(Existential, Formula)
+    def __init__(self, gen, conc, term=None):
+        if term is None:
+            term = gen.root.term
+            assumption = gen.root.formula
+        else:
+            assumption = gen.root.formula.term_sub(gen.root.term, term)
+        assert(term not in conc.root.free_terms())
+        assert(all(term not in undischarged.free_terms()
+                   for undischarged in conc.open if undischarged != assumption))
+        self.root = conc.root
+        self.branches = (gen, conc)
+        conc.discharge(assumption)
+        self.open = gen.open | conc.open
+
+    def __str__(self):
+        return make_str_tree(self, '∃-')
+
+class ExistentialIntro(Tree):
+    @roots(Formula)
+    def __init__(self, parent, term=None, quant=None):
+        if term is None:
+            term = next(iter(parent.root.free_terms()))
+        if quant is None:
+            self.root = Existential(term, parent.root)
+        else:
+            self.root = Existential(quant, parent.root.term_sub(term, quant))
+        self.branches = (parent, )
+        self.open = parent.open
+
+    def __str__(self):
+        return make_str_tree(self, '∃+')

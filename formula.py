@@ -47,7 +47,7 @@ class Implication(Formula, namedtuple('Implication', 'prem conc')):
         return '{} → {}'.format(*map(_paren, (self.prem, self.conc)))
 
     def free_terms(self):
-        return self.prem.free_terms | self.conc.free_terms
+        return self.prem.free_terms() | self.conc.free_terms()
 
     def term_sub(self, old, new):
         return Implication(self.prem.term_sub(old, new),
@@ -59,7 +59,7 @@ class Conjunction(Formula, namedtuple('Conjunction', 'left right')):
         return '{} ∧ {}'.format(*map(_paren, (self.left, self.right)))
 
     def free_terms(self):
-        return self.left.free_terms | self.right.free_terms
+        return self.left.free_terms() | self.right.free_terms()
 
     def term_sub(self, old, new):
         return Conjunction(self.left.term_sub(old, new),
@@ -71,7 +71,7 @@ class Disjunction(Formula, namedtuple('Disjunction', 'left right')):
         return '{} ∨ {}'.format(*map(_paren, (self.left, self.right)))
 
     def free_terms(self):
-        return self.left.free_terms | self.right.free_terms
+        return self.left.free_terms() | self.right.free_terms()
 
     def term_sub(self, old, new):
         return Disjunction(self.left.term_sub(old, new),
