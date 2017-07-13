@@ -129,3 +129,32 @@ class DisjunctionIntro(Tree):
 
     def __str__(self):
         return make_str_tree(self, '∨+')
+
+class UniversalElim(Tree):
+    @roots(Universal)
+    def __init__(self, gen, new_term=None):
+        if new_term is None:
+            self.root = gen.root.formula
+        else:
+            self.root = gen.root.formula.term_sub(gen.root.term, new_term)
+        self.branches = (gen, )
+        self.open = gen.open
+
+    def __str__(self):
+        return make_str_tree(self, '∀-')
+
+class UniversalIntro(Tree):
+    @roots(Formula)
+    def __init__(self, gen, term=None, quant=None):
+        if term is None:
+            term = next(iter(gen.root.free_terms()))
+        assert(not any(term in f.free_terms() for f in gen.open))
+        if quant is None:
+            self.root = Universal(term, gen.root)
+        else:
+            self.root = Universal(quant, gen.root.term_sub(term, quant))
+        self.branches = (gen, )
+        self.open = gen.open
+
+    def __str__(self):
+        return make_str_tree(self, '∀+')

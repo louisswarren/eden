@@ -40,6 +40,15 @@ class disjintr(Argstore):
     opts = 1
     constructor = DisjunctionIntro
 
+class univelim(Argstore):
+    order = 1
+    opts = 0 # Option is optional
+    constructor = UniversalElim
+
+class univintr(Argstore):
+    order = 1
+    opts = 0 # Options are optional
+    constructor = UniversalIntro
 
 def parse(*seq):
     stack = []
@@ -67,4 +76,12 @@ print(parse(
                           implintr(A),
                           implintr(B),
                           implintr(),
+))
+
+
+Px = Predicate('P', 'x')
+print(parse(
+    Universal('x', Px),
+    univelim('y'),
+    univintr('y', 'z'),
 ))
