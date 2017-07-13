@@ -63,6 +63,20 @@ class Assumption(Tree):
         else:
             return '[{}]'.format(self.root)
 
+class Axiom(Tree):
+    def __init__(self, scheme, *instances):
+        if not instances:
+            self.root = scheme
+        else:
+            self.root = scheme(*instances)
+        self.branches = ()
+        self.open = frozenset()
+
+    def __str__(self):
+        root_str = str(self.root)
+        return '-' * len(root_str) + '\n' + root_str
+
+
 class ImplicationElim(Tree):
     @roots(Implication, Formula)
     def __init__(self, impl, prem):
