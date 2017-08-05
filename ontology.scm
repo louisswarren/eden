@@ -1,11 +1,12 @@
 (set! COMMENT-FLAG #f)
 (libload "nat.scm")
+(libload "list.scm")
 (set! COMMENT-FLAG #t)
 
 (add-algs "formula"
   '("Atomic" "nat=>formula")
-  '("Implication" "formula=>formula=>formula"))
-(add-var-name "a" "b" "c" (py "formula"))
+  '("Implication" "formula=>formula=>formula")) (add-var-name "a" "b" "c" (py "formula"))
+(add-infix-display-string "Implication" "implies" 'pair-op)
 
 (add-algs "deduction"
   '("Assumption" "formula=>deduction")
@@ -16,6 +17,7 @@
 
 (add-program-constant "ImplicationPremise" (py "formula=>formula"))
 (add-computation-rule "ImplicationPremise (Implication a b)" "a")
+
 (add-program-constant "ImplicationConclusion" (py "formula=>formula"))
 (add-computation-rule "ImplicationConclusion (Implication a b)" "b")
 
@@ -29,6 +31,11 @@
         (Result dd)]"
   "Result (ImplicationIntro dd a)" "Implication a (Result dd)")
 
+(add-program-constant "OpenAssumptions" (py "deduction=>list formula"))
+(add-computation-rules
+  "OpenAssumptions (Assumption a)" "a:"
+  "OpenAssumptions (ImplicationElim dd de)" 
+
 
 (add-program-constant "P" (py "formula"))
 (add-program-constant "Q" (py "formula"))
@@ -38,4 +45,14 @@
   "Q" "Atomic 1"
   "R" "Atomic 2")
 
+(set-goal "Result (
+  ImplicationElim
+    (Assumption (P implies (P implies Q)))
+    (Assumption P)
+)")
+(ng)
 
+
+
+(set-goal "ListFilter P :: Q :: R:")
+(ng)
